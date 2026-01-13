@@ -1,4 +1,4 @@
 // API 設定
 const CONFIG = {
-  API_BASE_URL: "http://wallet-backend.zeabur.app",
+  API_BASE_URL: "https://wallet-backend.zeabur.app",
 };
