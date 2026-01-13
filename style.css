@@ -21,16 +21,9 @@
   padding: 0;
 }
 
+/* 背景圖案 */
 body {
-  font-family: 'Zen Maru Gothic', 'Varela Round', sans-serif;
-  background: var(--primary-bg);
-  /* 背景圖案 */
-  background-image: radial-gradient(#dcecc4 15%, transparent 16%), radial-gradient(#dcecc4 15%, transparent 16%);
-  background-size: 40px 40px;
-  background-position: 0 0, 20px 20px;
-  color: var(--text-color);
-  min-height: 100vh;
-  line-height: 1.6;
+  background: linear-gradient(120deg, #f6fdf5 0%, #e9f5e9 100%);
 }
 
 .hidden {
@@ -336,12 +329,13 @@ input:focus, select:focus {
 
 .stat-item.income .amount { color: var(--primary-green); }
 .stat-item.expense .amount { color: var(--primary-red); }
+.stat-item.blance .amount { color: var(--primary-blue); }
 
 /* Action Grid */
 .action-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
   margin-bottom: 24px;
 }
 
@@ -376,15 +370,21 @@ input:focus, select:focus {
 }
 
 .action-card.income {
-  background: #e3f6f5; /* 淡藍綠 */
-  box-shadow: 0 6px 0 #b8e0de;
-  color: var(--primary-green-dark);
+  background: #eef2f7;      /* 冰晶藍 */
+  box-shadow: 0 6px 0 #ceddec; /* 霧霾藍陰影 */
+  color: #4a6a8a;           /* 深海藍文字 */
 }
 
 .action-card.expense {
-  background: #fff0f0; /* 淡粉紅 */
-  box-shadow: 0 6px 0 #ffccd2;
-  color: #d65d5d;
+  background: #fdf8f2;      /* 極淺米色 */
+  box-shadow: 0 6px 0 #ede0d4; /* 稍微深一點的沙色 */
+  color: #8d775f;           /* 深咖啡色文字 */
+}
+
+.action-card.statistical {
+  background: #f5f3ff;
+  box-shadow: 0 6px 0 #e5e1ff;
+  color: #7c6fbe;
 }
 
 .action-card:hover {

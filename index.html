@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>杰哥記帳</title>
+    <title>開心記帳</title>
     <link rel="icon" type="image/png" href="./icon.png">
     <link rel="apple-touch-icon" href="./icon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./icon.png">
@@ -26,8 +26,8 @@
         <section id="landing-section" class="section landing-container">
             <div class="landing-card">
                 <div class="app-logo">💰</div>
-                <h1>杰哥的<br>私房錢記帳助手</h1>
-                <p class="subtitle">噓...這裡沒有發票，<br>只有男人的快樂與夢想！</p>
+                <h1>記帳助手</h1>
+                <p class="subtitle">掌握金錢流向<br>才能掌握人生！</p>
                 <button id="go-login-btn" class="btn btn-primary btn-lg">開啟小金庫</button>
             </div>
         </section>
@@ -60,7 +60,7 @@
             <header class="header">
                 <div class="brand">
                     <span class="app-logo small">💰</span>
-                    <span id="welcome-msg">歡迎回來！</span>
+                    <span id="welcome-msg">持續記錄！</span>
                 </div>
                 <button id="logout-btn" class="btn btn-sm btn-secondary">登出</button>
             </header>
@@ -89,6 +89,10 @@
                         <span class="label">本月支出</span>
                         <span id="total-expense" class="amount">0</span>
                     </div>
+                    <div class="stat-item balance">
+                        <span class="label">本月結餘</span>
+                        <span id="total-balance" class="amount">0</span>
+                    </div>
                 </div>
             </div>
 
@@ -101,6 +105,10 @@
                 <button id="btn-manage-category" class="action-card expense">
                     <span class="icon">🗂️</span>
                     <span>管理分類</span>
+                </button>
+                <button id="btn-statistical-chart" class="action-card statistical">
+                    <span class="icon">📊</span>
+                    <span>統計圖表</span>
                 </button>
             </div>
 

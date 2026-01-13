@@ -2,6 +2,7 @@
 let token = localStorage.getItem("token") || null;
 let categories = [];
 let transactions = [];
+let monthlyData = [];
 let budget = { id: "1", amount: "0" };
 
 // ===== DOM Elements =====
@@ -17,17 +18,23 @@ const welcomeMsg = document.getElementById("welcome-msg");
 
 const btnAddTransaction = document.getElementById("btn-add-transaction");
 const btnManageCategory = document.getElementById("btn-manage-category");
+const btnStatisticalChart = document.getElementById("btn-statistical-chart");
 const transactionList = document.getElementById("transaction-list");
 const transactionListTitle = document.getElementById("transaction-list-title");
 
 const totalIncome = document.getElementById("total-income");
 const totalExpense = document.getElementById("total-expense");
+const totalBalance = document.getElementById("total-balance");
 
 const budgetSection = document.getElementById("budget-section");
 const budgetRemaining = document.getElementById("budget-remaining");
 const budgetProgressBar = document.getElementById("budget-progress-bar");
 const totalBudget = document.getElementById("total-budget");
 const budgetPercent = document.getElementById("budget-percent");
+
+// 定義常用的 Emoji 清單
+const emojiList = ["🔖", "🍴", "🍫", "🧋", "☕", "🚗", "🏠", "💰", "💵", "📈", "👕", "🏋️", "🎮", "🥬", "🛒", "🛍️", "💇",
+  "🚌", "🚇", "💊", "📚", "✏️", "🎬", "🎤", "🎁", "🛡️", "✨", "🍎", "🍺", "🔥", "🏥", "📦", "📱", "💡", "✈️", "💄"];
 
 // ===== API Helper =====
 async function api(endpoint, options = {}) {
@@ -110,12 +117,16 @@ async function loadData() {
 
 async function loadCategories() {
   const data = await api("/api/categories");
-  categories = data.data || [];
+  categories = (data.data || []).sort((a, b) => Number(a.id) - Number(b.id));
 }
 
 async function loadTransactions() {
   const data = await api("/api/transactions");
   transactions = data.data || [];
+
+  const now = new Date();
+  monthlyData = getMonthlyData(transactions, now.getFullYear(), now.getMonth());
+
   renderTransactions();
   updateSummary();
 }
@@ -126,9 +137,19 @@ async function loadBudget() {
   updateSummary();
 }
 
+function getMonthlyData(data, year, month) {
+  return data.filter((txn) => {
+    const txnDate = new Date(txn.date);
+    return (
+      txnDate.getMonth() === month &&
+      txnDate.getFullYear() === year
+    );
+  });
+}
+
 // ===== Render Functions =====
 function renderTransactions() {
-  if (transactions.length === 0) {
+  if (monthlyData.length === 0) {
     transactionList.innerHTML = `<div style="text-align:center; padding:20px; color:#9ca095;">
       🍃 這裡空空的，還沒有紀錄喔！
     </div>`;
@@ -136,7 +157,7 @@ function renderTransactions() {
   }
 
   // 按 ID 排序（新的在前），如果 ID 相同才按日期
-  const sorted = [...transactions].sort((a, b) => {
+  const sorted = [...monthlyData].sort((a, b) => {
     // 嘗試將 ID 轉為數字比較（處理 txn-timestamp 格式）
     const getIdNum = (id) => {
       const match = id.match(/(\d+)$/);
@@ -150,14 +171,22 @@ function renderTransactions() {
   });
 
   transactionList.innerHTML = sorted
-    .map(
-      (txn) => `
+    .map((txn) => {
+      // --- 在這裡插入邏輯，不要動到下方的 HTML 結構 ---
+      
+      // 1. 去 categories 陣列找對應的類別資料
+      const catInfo = categories.find(c => c.name === txn.category_name);
+      
+      // 2. 準備好要顯示的圖標和顏色
+      const displayEmoji = catInfo ? catInfo.emoji : txn.category_name.charAt(0);
+      const displayColor = catInfo ? catInfo.color_hex : "#9E9E9E";
+
+      // --- 這裡開始回傳 HTML ---
+      return `
       <div class="transaction-item">
         <div class="left">
-          <div class="category-icon" style="background-color: ${
-            txn.category_color_hex || "#9E9E9E"
-          }">
-            ${txn.category_name.charAt(0)}
+          <div class="category-icon" style="background-color: ${displayColor}">
+            ${displayEmoji}
           </div>
           <div class="info">
             <span class="note">${txn.note || txn.category_name}</span>
@@ -178,8 +207,8 @@ function renderTransactions() {
           }')">✕</button>
         </div>
       </div>
-    `
-    )
+    `;
+    })
     .join("");
 }
 
@@ -191,24 +220,19 @@ function updateSummary() {
   // 更新標題為當月
   transactionListTitle.textContent = `${currentMonth + 1}月收支`;
 
-  const monthlyTransactions = transactions.filter((txn) => {
-    const txnDate = new Date(txn.date);
-    return (
-      txnDate.getMonth() === currentMonth &&
-      txnDate.getFullYear() === currentYear
-    );
-  });
-
-  const income = monthlyTransactions
+  const income = monthlyData
     .filter((txn) => txn.type === "income")
     .reduce((sum, txn) => sum + Number(txn.amount), 0);
 
-  const expense = monthlyTransactions
+  const expense = monthlyData
     .filter((txn) => txn.type === "expense")
     .reduce((sum, txn) => sum + Number(txn.amount), 0);
 
+  const balance = income - expense;
+
   totalIncome.textContent = income.toLocaleString();
   totalExpense.textContent = expense.toLocaleString();
+  totalBalance.textContent = balance.toLocaleString();
 
   // Update Budget UI
   const budgetAmount = Number(budget.amount);
@@ -366,10 +390,11 @@ async function openManageCategoryModal() {
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:8px; background:#f9f9f9; border-radius:8px;">
         <div style="display:flex; align-items:center; gap:8px; cursor:pointer; flex:1;" onclick="window.editCategory('${
           cat.id
-        }', '${cat.name}', '${cat.color_hex}')">
+        }', '${cat.name}', '${cat.color_hex}', '${cat.emoji||'🔖'}')">
           <span style="width:12px; height:12px; border-radius:50%; background:${
             cat.color_hex
           }"></span>
+          <span style="font-size:1.2em;">${cat.emoji||'🔖'}</span>
           <span>${cat.name}</span>
           <span style="font-size:0.8em; color:#999;">(點擊編輯)</span>
         </div>
@@ -388,7 +413,8 @@ async function openManageCategoryModal() {
     html: `
       <div style="text-align:left; margin-bottom:16px;">
         <label style="font-weight:bold;">新增類別</label>
-        <div style="display:flex; gap:8px; margin-top:8px;">
+        <div style="display:grid; display:grid; grid-template-columns: 50px 1fr 60px; gap:8px; margin-top:8px;">
+          <input id="swal-cat-emoji" class="swal2-input" placeholder="圖標" readonly style="margin:0 !important; text-align:center; padding:0;cursor:pointer; background:#fff;" onclick="selectEmoji('swal-cat-emoji')" maxlength="2" value="🔖">
           <input id="swal-cat-name" class="swal2-input" placeholder="名稱" style="margin:0 !important;">
           <input id="swal-cat-color" type="color" value="#5abf98" style="height:46px; width:60px; padding:0; border:none; background:none;">
         </div>
@@ -406,8 +432,9 @@ async function openManageCategoryModal() {
     preConfirm: () => {
       const name = document.getElementById("swal-cat-name").value;
       const color = document.getElementById("swal-cat-color").value;
+      const emoji = document.getElementById("swal-cat-emoji").value ;
       if (!name) return null;
-      return { name, color_hex: color };
+      return { name, color_hex: color, emoji: emoji };
     },
   });
 
@@ -438,7 +465,7 @@ async function openManageCategoryModal() {
 }
 
 // 編輯類別
-window.editCategory = async function (id, currentName, currentColor) {
+window.editCategory = async function (id, currentName, currentColor, currentEmoji) {
   const { value: updatedCat } = await Swal.fire({
     title: "編輯類別",
     html: `
@@ -451,6 +478,13 @@ window.editCategory = async function (id, currentName, currentColor) {
           <label>代表色</label>
           <input id="edit-cat-color" type="color" value="${currentColor}" style="width:100%; height:50px; padding:0; border:none;">
         </div>
+        <div>
+            <label>圖標</label>
+            <input id="edit-cat-emoji" class="swal2-input" readonly 
+                   style="margin:0 !important; text-align:center; padding:0; cursor:pointer; background:#fff;" 
+                   onclick="selectEmoji('edit-cat-emoji', '${id}')" 
+                   value="${currentEmoji || '🔖'}">
+        </div>
       </div>
     `,
     showCancelButton: true,
@@ -461,6 +495,7 @@ window.editCategory = async function (id, currentName, currentColor) {
       return {
         name: document.getElementById("edit-cat-name").value,
         color_hex: document.getElementById("edit-cat-color").value,
+        emoji: document.getElementById("edit-cat-emoji").value,
       };
     },
   });
@@ -649,6 +684,44 @@ window.deleteCategory = async function (id) {
     } catch (error) {
       Swal.fire("失敗", error.message, "error");
     }
+  }
+};
+
+async function selectEmoji(targetId, categoryId = null) {
+  // 取得當前視窗內的暫存值
+  const currentName = document.getElementById(targetId === 'swal-cat-emoji' ? 'swal-cat-name' : 'edit-cat-name')?.value || "";
+  const currentColor = document.getElementById(targetId === 'swal-cat-emoji' ? 'swal-cat-color' : 'edit-cat-color')?.value || "#5abf98";
+
+  await Swal.fire({
+    title: '選擇圖標',
+    html: `
+      <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 10px;">
+        ${emojiList.map(e => `
+          <div style="font-size: 2em; cursor: pointer;" 
+               onclick="window.setEmoji('${targetId}', '${e}', '${currentName}', '${currentColor}', '${categoryId}')">
+            ${e}
+          </div>
+        `).join('')}
+      </div>
+    `,
+    showConfirmButton: false,
+  });
+}
+
+window.setEmoji = function(targetId, emoji, savedName, savedColor, categoryId) {
+  if (targetId === 'edit-cat-emoji') {
+    // 如果是編輯模式，選完跳回 editCategory 視窗
+    window.editCategory(categoryId, savedName, savedColor, emoji);
+  } else {
+    // 如果是新增模式，選完跳回 openManageCategoryModal
+    openManageCategoryModal();
+    setTimeout(() => {
+      if (document.getElementById("swal-cat-emoji")) {
+        document.getElementById("swal-cat-emoji").value = emoji;
+        document.getElementById("swal-cat-name").value = savedName;
+        document.getElementById("swal-cat-color").value = savedColor;
+      }
+    }, 50);
   }
 };
 
